@@ -7,7 +7,7 @@ from scipy.signal import resample
 """
 Class: HeartRateHelper
 
-Takes 1D data and returns appropriate data
+Takes 1D data and returns appropriate data.
 
 """
 class HeartRateHelper:
@@ -36,23 +36,24 @@ class HeartRateHelper:
 		plt.close()
 
 	def get_heartrate_and_breathing(self, data):
+		framerate = self.framerate
+		if self.resample != -1:
+			data = resample(data, (len(data)//self.framerate)*self.resample)
+			framerate = self.resample
+
 		if self.filter:
-			data = hp.filter_signal(data, [0.7, 3.5], sample_rate=self.framerate, 
+			data = hp.filter_signal(data, [0.7, 3.5], sample_rate=framerate, 
 							order=3, filtertype='bandpass')
 			data = hp.scale_data(data)
 
-		if self.resample != -1:
-			data = resample(data, len(data)/self.framerate*self.resample)
-			wd, m = hp.process(data, self.resample)
-		else:
-			wd, m = hp.process(data, self.framerate)
+		wd, m = hp.process(data, framerate, high_precision = True, clean_rr = True)
 
 		self.m = m
 		self.wd = wd
+		hr = m["bpm"]
+		rr = m["breathingrate"]
 
 		if self.show:
-			print(wd.keys())
-			print(m.keys())
 			hp.plotter(wd, m)
 
 		if self.save_path != '':
